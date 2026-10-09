@@ -1,0 +1,33 @@
+refresh:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: leave_by
+
+test_alert:
+  fields:
+    tier:
+      required: false
+      default: leave_now
+      selector:
+        select:
+          translation_key: tier
+          options:
+            - heads_up
+            - leave_now
+            - late
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: leave_by
+
+dismiss_event:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: leave_by

@@ -1,0 +1,400 @@
+{
+  "config": {
+    "step": {
+      "api_key": {
+        "title": "Step 1 of 8: Google Maps API key",
+        "description": "**Leave By needs a Google Maps Platform API key** so it can ask Google how long the trip will take with current traffic. Setup is free, but Google requires a billing account on file. You get a monthly free allowance, and live-traffic routes use a higher-priced tier than basic ones, so check [Google's pricing page](https://developers.google.com/maps/billing-and-pricing/pricing) for current rates.\n\n1. Open the [Google Cloud console](https://console.cloud.google.com/projectcreate) and create a project (for example “Home Assistant”).\n2. [Set up billing](https://console.cloud.google.com/billing) for that project.\n3. [Enable the Routes API](https://console.cloud.google.com/apis/library/routes.googleapis.com). Click **Enable**.\n4. Open [Credentials](https://console.cloud.google.com/apis/credentials) and choose **Create credentials → API key**.\n5. Edit the new key. Under *API restrictions* choose **Restrict key** and tick **Routes API** only. Leave *Application restrictions* set to **None**, because Home Assistant calls Google from your server and your home IP address can change.\n6. Recommended: add a [budget alert](https://console.cloud.google.com/billing/budgets) so you hear about it if usage ever spikes.\n7. Paste the key below. It is tested as soon as you submit.\n\nGoogle occasionally rearranges its menus; the links above go straight to the right pages.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "Stored in Home Assistant and only ever sent to Google's Routes API."
+        }
+      },
+      "calendars": {
+        "title": "Step 2 of 8: Which calendar(s)?",
+        "description": "Pick every calendar Leave By should watch. It looks for **timed events that have a location**. All-day events and events whose location is just a video-call link are ignored.\n\nAny calendar that appears in Home Assistant works: Google Calendar, CalDAV, iCloud, Microsoft 365, Local Calendar and so on. Don't see yours? Add its integration under *Settings → Devices & services* first, then come back.",
+        "data": {
+          "calendars": "Calendars",
+          "lookahead_hours": "Look ahead",
+          "poll_minutes": "Re-check travel time every"
+        },
+        "data_description": {
+          "lookahead_hours": "Events further away than this are ignored until they come into range.",
+          "poll_minutes": "How often traffic is re-checked. Each check is one Google request per upcoming event. Alerts still fire on the exact minute, whatever you choose here."
+        }
+      },
+      "trip": {
+        "title": "Step 3 of 8: Your trip",
+        "description": "Leave By works out **when you need to leave** as:\n\n> event start − travel time − the time it takes you to get going\n\n**Choosing the travel mode per event.** Pick your usual mode below, then override it for any single event by putting a hashtag in its **title or description**:\n\n- `#transit` (also `#bus`, `#train`, `#subway`, `#metro`, `#rail`)\n- `#drive` (also `#car`)\n- `#walk`\n- `#bike` (also `#cycle`)\n\nFor transit, Leave By finds a trip that arrives by the start time and works back from when the first vehicle actually boards, minus your walk to the stop.",
+        "data": {
+          "buffer_minutes": "Time to get to your car / out the door",
+          "travel_mode": "Usual travel mode",
+          "event_tags": "Let #tags in events choose the mode",
+          "live_traffic": "Use live traffic",
+          "origin_type": "Where do trips start?"
+        },
+        "data_description": {
+          "buffer_minutes": "Shoes on, down the stairs, walk to the car, buckle up. This is added on top of Google's travel time.",
+          "event_tags": "Looks for tags like #transit or #walk in the event title and description.",
+          "live_traffic": "Only applies to driving. Turns on traffic-aware routing, which costs a bit more per request on Google's side.",
+          "origin_type": "Home uses your Home Assistant home location. Choose a person to calculate from wherever they currently are, or a fixed address."
+        }
+      },
+      "origin_detail": {
+        "title": "Where do trips start?",
+        "description": "Tell Leave By where to start from.\n\n- **Person or device tracker:** travel time is calculated from that entity's current location. If its location is unavailable, your home location is used instead.\n- **Fixed address:** type it as you would into Google Maps.",
+        "data": {
+          "origin_entity": "Person or device tracker",
+          "origin_address": "Starting address"
+        }
+      },
+      "countdown": {
+        "title": "Step 4 of 8: The countdown",
+        "description": "Choose what the countdown counts down **to**.\n\n- **Time to leave:** hits zero at the moment you need to get moving, then counts up (negative) while you're running late, until the event starts.\n- **Event start:** hits zero when the event begins.\n\nLeave By always provides a seconds-remaining sensor and a text sensor (for example `42:10`) that update locally every few seconds without using any Google requests, so they work well in native-app widgets that can only show an entity's state.",
+        "data": {
+          "countdown_type": "Count down to",
+          "text_style": "Text format",
+          "tick_seconds": "Update the display every",
+          "timer_entity": "Also drive this timer helper (optional)",
+          "text_entity": "Also write the event name to this text helper (optional)"
+        },
+        "data_description": {
+          "text_style": "Clock looks like 1:05:09 or 42:10. Friendly looks like 1h 05m or 42m.",
+          "tick_seconds": "Smaller is smoother but writes more history. 15 is a good balance.",
+          "timer_entity": "For dashboards built around a timer helper (such as timer-based countdown cards). Leave blank if you don't use one. Leave By will start, restart and cancel this timer for you.",
+          "text_entity": "An input_text helper that will hold the name of the event being counted down to. Leave blank to skip."
+        }
+      },
+      "alerts": {
+        "title": "Step 5 of 8: When should it alert you?",
+        "description": "There are up to three alerts for each event:\n\n- **Heads-up:** a set time before you need to leave.\n- **Leave now:** at the moment you need to leave (always on).\n- **Running late:** a nag some minutes after you should have left.\n\nSet a time to 0 to turn that alert off. What each alert does (lights, speakers, phone) is chosen in the next steps. Every alert fires only once per event, even if Home Assistant restarts.",
+        "data": {
+          "heads_up_minutes": "Heads-up this long before leaving",
+          "late_minutes": "Running-late alert this long after"
+        }
+      },
+      "lights": {
+        "title": "Step 6 of 8: Flash some lights",
+        "description": "Pick lights to flash when an alert fires, and choose a color for each alert. Lights return to their previous color and brightness afterwards, even if they were off.\n\nLeave the lights empty to skip this. Lights need to support flashing, and color only applies to color-capable bulbs.",
+        "data": {
+          "lights": "Lights to flash",
+          "flash_length": "Flash length",
+          "flash_count": "Number of flashes",
+          "color_heads_up": "Heads-up color",
+          "color_leave_now": "Leave-now color",
+          "color_late": "Running-late color"
+        }
+      },
+      "speakers": {
+        "title": "Step 7 of 8: Speak on speakers",
+        "description": "Pick speakers to make announcements, and a text-to-speech service to read them.\n\nLeave the speakers empty to skip this. In the messages you can use `{event}`, `{minutes}`, `{travel_minutes}`, `{minutes_late}`, `{location}`, `{leave_time}` and `{start_time}`.",
+        "data": {
+          "speakers": "Speakers",
+          "tts_entity": "Text-to-speech service",
+          "volume": "Announcement volume",
+          "message_heads_up": "Heads-up message",
+          "message_leave_now": "Leave-now message",
+          "message_late": "Running-late message"
+        },
+        "data_description": {
+          "volume": "0 leaves each speaker's volume alone. Anything higher sets the volume before the announcement and does not restore it afterwards."
+        }
+      },
+      "notifications": {
+        "title": "Phone & other notifications",
+        "description": "Optionally also send each alert as a notification, for example to the Home Assistant app on your phone. Leave empty to skip.",
+        "data": {
+          "notify_services": "Notify services"
+        }
+      },
+      "confirm": {
+        "title": "Step 8 of 8: Almost done",
+        "description": "Give this tracker a name. You can change any of your answers later from the integration's **Configure** button.\n\nTip: after setup, open the device page to find a **Send test alert** button, and a **Skip current event** button for those “I'm already in the car” moments.",
+        "data": {
+          "name": "Name",
+          "run_test": "Send a test alert when setup finishes"
+        }
+      },
+      "user": {
+        "title": "Set up Leave By",
+        "description": "Leave By watches your calendar and tells you **when to leave** for events that have a location. It checks live travel time with Google Maps, shows a countdown, and can flash lights, speak on speakers and notify your phone.\n\nI'll ask a few questions:\n\n1. A Google Maps API key (I'll walk you through getting one)\n2. Which calendar(s) to watch\n3. How you travel and how long it takes you to get to the car\n4. What the countdown counts down to\n5. When to alert you\n6. Which lights, speakers and phones to use\n\nIt takes about five minutes. Press **Submit** to begin."
+      },
+      "reauth_confirm": {
+        "title": "Update your Google Maps API key",
+        "description": "Google rejected the current API key, or the Routes API was disabled for its project. Create or fix a key as described in the [Google Cloud console](https://console.cloud.google.com/apis/credentials) and enter it here.",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "Google says this API key isn't valid. Check you copied the whole key.",
+      "api_not_enabled": "The key works, but the Routes API isn't enabled for its project. Enable it (step 3) and try again; it can take a minute to take effect.",
+      "permission_denied": "Google refused the request. Usually billing isn't set up on the project, or the key is restricted: allow the **Routes API** under API restrictions and set Application restrictions to **None**.",
+      "quota_exceeded": "Google reports a quota or rate limit for this key. Check your project's quotas and try again.",
+      "cannot_connect": "Couldn't reach Google. Check Home Assistant's internet connection and try again.",
+      "unknown": "Google returned an unexpected error. Check the Home Assistant log for details.",
+      "no_calendars_selected": "Pick at least one calendar.",
+      "address_required": "Enter a starting address.",
+      "tts_required": "Choose a text-to-speech service to use with these speakers."
+    },
+    "abort": {
+      "no_calendars": "No calendars were found in Home Assistant. Add a calendar integration first (for example Google Calendar, CalDAV or Local Calendar under Settings → Devices & services), then add Leave By again.",
+      "reauth_successful": "The API key was updated."
+    }
+  },
+  "options": {
+    "step": {
+      "api_key": {
+        "title": "Google Maps API key",
+        "description": "**Leave By needs a Google Maps Platform API key** so it can ask Google how long the trip will take with current traffic. Setup is free, but Google requires a billing account on file. You get a monthly free allowance, and live-traffic routes use a higher-priced tier than basic ones, so check [Google's pricing page](https://developers.google.com/maps/billing-and-pricing/pricing) for current rates.\n\n1. Open the [Google Cloud console](https://console.cloud.google.com/projectcreate) and create a project (for example “Home Assistant”).\n2. [Set up billing](https://console.cloud.google.com/billing) for that project.\n3. [Enable the Routes API](https://console.cloud.google.com/apis/library/routes.googleapis.com). Click **Enable**.\n4. Open [Credentials](https://console.cloud.google.com/apis/credentials) and choose **Create credentials → API key**.\n5. Edit the new key. Under *API restrictions* choose **Restrict key** and tick **Routes API** only. Leave *Application restrictions* set to **None**, because Home Assistant calls Google from your server and your home IP address can change.\n6. Recommended: add a [budget alert](https://console.cloud.google.com/billing/budgets) so you hear about it if usage ever spikes.\n7. Paste the key below. It is tested as soon as you submit.\n\nGoogle occasionally rearranges its menus; the links above go straight to the right pages.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "Stored in Home Assistant and only ever sent to Google's Routes API."
+        }
+      },
+      "calendars": {
+        "title": "Which calendar(s)?",
+        "description": "Pick every calendar Leave By should watch. It looks for **timed events that have a location**. All-day events and events whose location is just a video-call link are ignored.\n\nAny calendar that appears in Home Assistant works: Google Calendar, CalDAV, iCloud, Microsoft 365, Local Calendar and so on. Don't see yours? Add its integration under *Settings → Devices & services* first, then come back.",
+        "data": {
+          "calendars": "Calendars",
+          "lookahead_hours": "Look ahead",
+          "poll_minutes": "Re-check travel time every"
+        },
+        "data_description": {
+          "lookahead_hours": "Events further away than this are ignored until they come into range.",
+          "poll_minutes": "How often traffic is re-checked. Each check is one Google request per upcoming event. Alerts still fire on the exact minute, whatever you choose here."
+        }
+      },
+      "trip": {
+        "title": "Your trip",
+        "description": "Leave By works out **when you need to leave** as:\n\n> event start − travel time − the time it takes you to get going\n\n**Choosing the travel mode per event.** Pick your usual mode below, then override it for any single event by putting a hashtag in its **title or description**:\n\n- `#transit` (also `#bus`, `#train`, `#subway`, `#metro`, `#rail`)\n- `#drive` (also `#car`)\n- `#walk`\n- `#bike` (also `#cycle`)\n\nFor transit, Leave By finds a trip that arrives by the start time and works back from when the first vehicle actually boards, minus your walk to the stop.",
+        "data": {
+          "buffer_minutes": "Time to get to your car / out the door",
+          "travel_mode": "Usual travel mode",
+          "event_tags": "Let #tags in events choose the mode",
+          "live_traffic": "Use live traffic",
+          "origin_type": "Where do trips start?"
+        },
+        "data_description": {
+          "buffer_minutes": "Shoes on, down the stairs, walk to the car, buckle up. This is added on top of Google's travel time.",
+          "event_tags": "Looks for tags like #transit or #walk in the event title and description.",
+          "live_traffic": "Only applies to driving. Turns on traffic-aware routing, which costs a bit more per request on Google's side.",
+          "origin_type": "Home uses your Home Assistant home location. Choose a person to calculate from wherever they currently are, or a fixed address."
+        }
+      },
+      "origin_detail": {
+        "title": "Where do trips start?",
+        "description": "Tell Leave By where to start from.\n\n- **Person or device tracker:** travel time is calculated from that entity's current location. If its location is unavailable, your home location is used instead.\n- **Fixed address:** type it as you would into Google Maps.",
+        "data": {
+          "origin_entity": "Person or device tracker",
+          "origin_address": "Starting address"
+        }
+      },
+      "countdown": {
+        "title": "The countdown",
+        "description": "Choose what the countdown counts down **to**.\n\n- **Time to leave:** hits zero at the moment you need to get moving, then counts up (negative) while you're running late, until the event starts.\n- **Event start:** hits zero when the event begins.\n\nLeave By always provides a seconds-remaining sensor and a text sensor (for example `42:10`) that update locally every few seconds without using any Google requests, so they work well in native-app widgets that can only show an entity's state.",
+        "data": {
+          "countdown_type": "Count down to",
+          "text_style": "Text format",
+          "tick_seconds": "Update the display every",
+          "timer_entity": "Also drive this timer helper (optional)",
+          "text_entity": "Also write the event name to this text helper (optional)"
+        },
+        "data_description": {
+          "text_style": "Clock looks like 1:05:09 or 42:10. Friendly looks like 1h 05m or 42m.",
+          "tick_seconds": "Smaller is smoother but writes more history. 15 is a good balance.",
+          "timer_entity": "For dashboards built around a timer helper (such as timer-based countdown cards). Leave blank if you don't use one. Leave By will start, restart and cancel this timer for you.",
+          "text_entity": "An input_text helper that will hold the name of the event being counted down to. Leave blank to skip."
+        }
+      },
+      "alerts": {
+        "title": "When should it alert you?",
+        "description": "There are up to three alerts for each event:\n\n- **Heads-up:** a set time before you need to leave.\n- **Leave now:** at the moment you need to leave (always on).\n- **Running late:** a nag some minutes after you should have left.\n\nSet a time to 0 to turn that alert off. What each alert does (lights, speakers, phone) is chosen in the next steps. Every alert fires only once per event, even if Home Assistant restarts.",
+        "data": {
+          "heads_up_minutes": "Heads-up this long before leaving",
+          "late_minutes": "Running-late alert this long after"
+        }
+      },
+      "lights": {
+        "title": "Flash some lights",
+        "description": "Pick lights to flash when an alert fires, and choose a color for each alert. Lights return to their previous color and brightness afterwards, even if they were off.\n\nLeave the lights empty to skip this. Lights need to support flashing, and color only applies to color-capable bulbs.",
+        "data": {
+          "lights": "Lights to flash",
+          "flash_length": "Flash length",
+          "flash_count": "Number of flashes",
+          "color_heads_up": "Heads-up color",
+          "color_leave_now": "Leave-now color",
+          "color_late": "Running-late color"
+        }
+      },
+      "speakers": {
+        "title": "Speak on speakers",
+        "description": "Pick speakers to make announcements, and a text-to-speech service to read them.\n\nLeave the speakers empty to skip this. In the messages you can use `{event}`, `{minutes}`, `{travel_minutes}`, `{minutes_late}`, `{location}`, `{leave_time}` and `{start_time}`.",
+        "data": {
+          "speakers": "Speakers",
+          "tts_entity": "Text-to-speech service",
+          "volume": "Announcement volume",
+          "message_heads_up": "Heads-up message",
+          "message_leave_now": "Leave-now message",
+          "message_late": "Running-late message"
+        },
+        "data_description": {
+          "volume": "0 leaves each speaker's volume alone. Anything higher sets the volume before the announcement and does not restore it afterwards."
+        }
+      },
+      "notifications": {
+        "title": "Phone & other notifications",
+        "description": "Optionally also send each alert as a notification, for example to the Home Assistant app on your phone. Leave empty to skip.",
+        "data": {
+          "notify_services": "Notify services"
+        }
+      },
+      "init": {
+        "title": "Leave By settings",
+        "description": "Choose a section to change, then **Save and close**.",
+        "menu_options": {
+          "calendars": "Calendars and how often to check",
+          "trip": "Trip: travel mode, buffer, starting point",
+          "countdown": "Countdown type and display",
+          "alerts": "Alert timing",
+          "lights": "Lights and colors",
+          "speakers": "Speakers and messages",
+          "notifications": "Phone / other notifications",
+          "api_key": "Google Maps API key",
+          "finish": "Save and close"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "Google says this API key isn't valid. Check you copied the whole key.",
+      "api_not_enabled": "The key works, but the Routes API isn't enabled for its project. Enable it (step 3) and try again; it can take a minute to take effect.",
+      "permission_denied": "Google refused the request. Usually billing isn't set up on the project, or the key is restricted: allow the **Routes API** under API restrictions and set Application restrictions to **None**.",
+      "quota_exceeded": "Google reports a quota or rate limit for this key. Check your project's quotas and try again.",
+      "cannot_connect": "Couldn't reach Google. Check Home Assistant's internet connection and try again.",
+      "unknown": "Google returned an unexpected error. Check the Home Assistant log for details.",
+      "no_calendars_selected": "Pick at least one calendar.",
+      "address_required": "Enter a starting address.",
+      "tts_required": "Choose a text-to-speech service to use with these speakers."
+    }
+  },
+  "selector": {
+    "travel_mode": {
+      "options": {
+        "DRIVE": "Driving",
+        "WALK": "Walking",
+        "BICYCLE": "Cycling",
+        "TRANSIT": "Public transit"
+      }
+    },
+    "origin_type": {
+      "options": {
+        "home": "My Home Assistant home location",
+        "tracker": "A person or device (live location)",
+        "address": "A fixed address"
+      }
+    },
+    "countdown_type": {
+      "options": {
+        "leave_by": "Time to leave",
+        "event_start": "Event start"
+      }
+    },
+    "text_style": {
+      "options": {
+        "clock": "Clock (42:10)",
+        "friendly": "Friendly (42m)"
+      }
+    },
+    "flash_length": {
+      "options": {
+        "short": "Short (about 2 seconds)",
+        "long": "Long (about 10 seconds)"
+      }
+    },
+    "tier": {
+      "options": {
+        "heads_up": "Heads-up",
+        "leave_now": "Leave now",
+        "late": "Running late"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_event": {
+        "name": "Next event"
+      },
+      "leave_by_time": {
+        "name": "Leave by"
+      },
+      "event_start": {
+        "name": "Event start"
+      },
+      "travel_time": {
+        "name": "Travel time"
+      },
+      "seconds_remaining": {
+        "name": "Seconds remaining"
+      },
+      "countdown": {
+        "name": "Countdown"
+      }
+    },
+    "binary_sensor": {
+      "time_to_leave": {
+        "name": "Time to leave"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh now"
+      },
+      "test_alert": {
+        "name": "Send test alert"
+      },
+      "dismiss_event": {
+        "name": "Skip current event"
+      }
+    }
+  },
+  "services": {
+    "refresh": {
+      "name": "Refresh",
+      "description": "Re-read the calendars and travel times now.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tracker",
+          "description": "Which Leave By tracker. Leave empty for all."
+        }
+      }
+    },
+    "test_alert": {
+      "name": "Send test alert",
+      "description": "Run the configured lights, speakers and notifications for one alert type, using a made-up event.",
+      "fields": {
+        "tier": {
+          "name": "Alert type",
+          "description": "Which alert to simulate."
+        },
+        "config_entry_id": {
+          "name": "Tracker",
+          "description": "Which Leave By tracker. Leave empty for all."
+        }
+      }
+    },
+    "dismiss_event": {
+      "name": "Skip current event",
+      "description": "Stop alerting for the event currently being counted down to (for example when you are already on your way).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Tracker",
+          "description": "Which Leave By tracker. Leave empty for all."
+        }
+      }
+    }
+  }
+}

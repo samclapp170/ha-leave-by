@@ -1,0 +1,25 @@
+{
+  "domain": "leave_by",
+  "name": "Leave By",
+  "after_dependencies": [
+    "tts",
+    "media_player",
+    "light",
+    "notify",
+    "timer",
+    "input_text"
+  ],
+  "codeowners": [
+    "@samclapp170"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "calendar"
+  ],
+  "documentation": "https://github.com/samclapp170/ha-leave-by",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/samclapp170/ha-leave-by/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
